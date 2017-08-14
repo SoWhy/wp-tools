@@ -1,6 +1,26 @@
 <?php
 
-if (($_GET['user']) && (strlen($_GET['user']) <= 85) && ((is_int((int)$_GET['limit'])) || ($_GET['limit'] == ""))) {
+if (
+($_GET['user']) && 
+(strlen($_GET['user']) <= 100) && 
+(
+  ($_GET['limit'] == "") || 
+  (($_GET['limit'] == "number") && (is_int((int)$_GET['limitnum']))) || 
+  (
+    ($_GET['limit'] == "date") && 
+    (is_int((int)(str_replace("-", "", $_GET['from'])))) && 
+    (is_int((int)(str_replace("-", "", $_GET['to'])))) && 
+    ((str_replace("-". "", $_GET['from'])) <= (str_replace("-". "", $_GET['to'])))
+   )
+  )
+) {
+
+if (($_GET['limit'] == "number") && (!$_GET['limitnum'])) {
+  $_GET['limitnum'] = 100;
+}
+
+$from = str_replace('-', '', $_GET['from']) . "000000";
+$to = str_replace("-", "", $_GET['to']) . "235959";
 
 //create empty array for outcomes
 $outcomes = array(
@@ -34,7 +54,7 @@ $sql_c = 'SELECT * FROM user WHERE user_name = "' . $username . '" LIMIT 1';
 
 if (!$result_u = $mysqli->query($sql_c)) {
     echo "<h1>Sorry, the website is experiencing problems.</h1>\n";
-        echo "Error: Failed to make a MySQL connection, here is why: \n";
+    echo "Error: Failed to make a MySQL connection, here is why: \n";
     echo "Errno: " . $mysqli->connect_errno . "\n";
     echo "Error: " . $mysqli->connect_error . "\n";
     exit;
@@ -50,18 +70,30 @@ if ($result_u->num_rows === 0) {
 //Actual query
 $sql = 'SELECT page_title, revs.rev_timestamp, revs.rev_comment
 FROM revision_userindex AS revs
-LEFT JOIN revision_userindex AS parentrevs ON (revs.rev_parent_id = parentrevs.rev_id)
+LEFT JOIN revision_userindex AS parentrevs ON (revs.rev_parent_id= parentrevs.rev_id)
 JOIN page ON revs.rev_page = page_id
 LEFT JOIN user AS usr ON revs.rev_user = usr.user_id
 WHERE usr.user_name = "' . $username . '"
 AND page_namespace = 4
 AND page_title RLIKE "Articles_for_deletion"
-AND ((revs.rev_comment RLIKE "Closed as" AND revs.rev_comment RLIKE "XFDcloser") OR revs.rev_comment RLIKE "result was")
-ORDER BY revs.rev_timestamp DESC';
+AND ((revs.rev_comment RLIKE "Closed as" AND revs.rev_comment RLIKE "XFDcloser") OR revs.rev_comment RLIKE "result was")';
 
 // Add limit if requested
-if ($_GET['limit']) {
-$sql .= "\nLIMIT " . $_GET['limit'];
+if ($_GET['limit'] == "number") {
+$sql .= '
+ORDER BY revs.rev_timestamp DESC
+LIMIT ' . (int)$_GET['limitnum'];
+}
+elseif ($_GET['limit'] == "date") {
+$sql .= '
+AND revs.rev_timestamp >= ' . $from . '
+AND revs.rev_timestamp <= ' . $to . '
+ORDER BY revs.rev_timestamp DESC
+';
+}
+else {
+$sql .= '
+ORDER BY revs.rev_timestamp DESC';
 }
 
 $header .= "<b>User:</b> $username<br/>";
@@ -77,6 +109,9 @@ $output .= '<table>
 // Do query
 if (!$result = $mysqli->query($sql)) {
     echo "<h1>Sorry, the website is experiencing problems.</h1>\n";
+    echo "Error: Failed to make a MySQL connection, here is why: \n";
+    echo "Errno: " . $mysqli->connect_errno . "\n";
+    echo "Error: " . $mysqli->connect_error . "\n";
     exit;
 }
 
@@ -182,16 +217,26 @@ while ($entry = $result->fetch_assoc()) {
 $output .= "</table><br/>";
 
 //Display info about number of closes
-if (((int)$_GET['limit']) && (array_sum($outcomes) <= (int)$_GET['limit'])) {
-$header .= "Displaying the last <strong>" . array_sum($outcomes) . "</strong> AFDs closed by this user<br/>";
+if (((int)$_GET['limitnum']) && (array_sum($outcomes) <= (int)$_GET['limitnum'])) {
+
+  $header .= "Displaying the last <strong>" . array_sum($outcomes) . "</strong> AFDs closed by this user<br/>";
 
 }
 else {
-$header .= "Total AFDs closed by this user: <strong>" . array_sum($outcomes) . "</strong><br/>";
+
+  $header .= "Total AFDs closed by this user: <strong>" . array_sum($outcomes) . "</strong><br/>";
+
+  if ($_GET['limit'] == "date") {
+    
+    $header .= "(Daterange analyzed: " . $_GET['from'] . " - " . $_GET['to'] . ")<br/>";
+    
+  }
 
 }
 
 }
+
+
 else {
 // Standard form
 $output .= <<<HTML
@@ -199,29 +244,33 @@ $output .= <<<HTML
 	<table border="0">
 		<tr>
 			<td><b>User:</b></td>
-			<td><input type=text name="user" maxlength="85"></td>
+			<td colspan="2"><input type=text name="user" maxlength="85"></td>
 		</tr>
 		<tr>
 			<td><b>Create pie chart?</b></td>
-			<td>
+			<td colspan="2">
         <input type="radio" name="chart" value="yes" checked>Yes <input type="radio" name="chart" value="no">No<br></td>
 		</tr>
 		<tr>
-			<td colspan="2">Analyze the last 
-        <select name="limit">
-          <option value="25" selected>25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-          <option value="250">250</option>
-          <option value="500">500</option>
-          <option value="1000">1000</option>
-          <option value="">all</option>
-        </select>
-        AFDs
+      <td><b>Limit output?</b></td>
+      <td colspan="2"><label><div style="width: 100%"><input type="radio" name="limit" value="" id="no" checked>No</b></div></label></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><input type="radio" id="number" name="limit" value="number"><label for="number">By number:</label></td>
+      <td>
+        <label for="number">Display the last <input name="limitnum" placeholder="100" type="text" size="7"> AFDs closed</label><br/>
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td><input type="radio" name="limit" id="date" value="date"><label for="date">By daterange:</td>
+      <td>
+       <input type="text" id="from" name="from"><input type="text" id="to" name="to"></label>
       </td>
     </tr>
 		<tr>
-			<td align="right" colspan="2"><input type="submit" value="Get stats"></td>
+			<td align="right" colspan="3"><input type="submit" value="Get stats"></td>
 		</tr>
 	</table>
 	</form>
@@ -241,9 +290,52 @@ HTML;
 <html> 
 <head>
   <meta charset="UTF-8">
-<title>SoWhy's AFD analyzer (v0.01)</title>
+<title>SoWhy's AFD analyzer (v0.02)</title>
 <link rel="stylesheet" type="text/css" href="sowhy.css">
 
+  <link rel="stylesheet" href="jquery-ui/jquery-ui.css">
+  <link rel="stylesheet" href="jquery-ui/style.css">
+  <script src="jquery-ui/jquery.js"></script>
+  <script src="jquery-ui/jquery-ui.js"></script>
+  <script>
+  $( function() {
+    var dateFormat = "mm/dd/yy",
+      from = $( "#from" )
+        .datepicker({
+          changeMonth: true,
+          changeYear: true,
+          numberOfMonths: 1,
+          maxDate: 0,
+          dateFormat: "yy-mm-dd"
+        })
+        .on( "change", function() {
+          to.datepicker( "option", "minDate", getDate( this ) );
+        }),
+      to = $( "#to" ).datepicker({
+        changeMonth: true,
+        changeYear: true,
+        numberOfMonths: 1,
+        maxDate: 0,
+        dateFormat: "yy-mm-dd"
+      })
+      .on( "change", function() {
+        from.datepicker( "option", "maxDate", getDate( this ) );
+      });
+ 
+    function getDate( element ) {
+      var date;
+      try {
+        date = $.datepicker.parseDate( dateFormat, element.value );
+      } catch( error ) {
+        date = null;
+      }
+ 
+      return date;
+    }
+  } );
+    
+  </script>
+  
 <?php
 if ($outcomes && ($_GET['chart'] == "yes")) {
 ?>
