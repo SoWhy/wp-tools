@@ -98,13 +98,14 @@ ORDER BY revs.rev_timestamp DESC';
 
 $header .= "<b>User:</b> $username<br/>";
 
-$output .= '<table>
-
+$output .= '<table id="results" class="tablesorter">
+<thead>
 <tr>
 <th>Date</th>
 <th>AFD</th>
 <th>Result</th>
-</tr>';
+</tr>
+</thead>';
 
 // Do query
 if (!$result = $mysqli->query($sql)) {
@@ -127,77 +128,77 @@ while ($entry = $result->fetch_assoc()) {
 
 			$outcomes['Soft delete']++;
 
-			$output .= "<td class=\"del\">Soft delete</td>";
+			$output .= '<td class="del">Soft delete</td>';
 
 		}
 		elseif (preg_match("/speedy delete/", $lowercomment)) {
 
 			$outcomes['Speedy delete']++;
 
-			$output .= "<td class=\"del\">Speedy delete</td>";
+			$output .= '<td class="del">Speedy delete</td>';
 
 		}
 		elseif (preg_match("/delete/", $lowercomment)) {
 
 			$outcomes['Delete']++;
 
-			$output .= "<td class=\"del\">Delete</td>";
+			$output .= '<td class="del">Delete</td>';
 
 		}
 		elseif (preg_match("/speedy keep/", $lowercomment)) {
 
 			$outcomes['Speedy keep']++;
 
-			$output .= "<td class=\"keep\">Speedy keep</td>";
+			$output .= '<td class="keep">Speedy keep</td>';
 
 		}
 		elseif (preg_match("/keep/", $lowercomment)) {
 
 			$outcomes['Keep']++;
 
-			$output .= "<td class=\"keep\">Keep</td>";
+			$output .= '<td class="keep">Keep</td>';
 
 		}
 		elseif (preg_match("/edirect/", $lowercomment)) {
 
 			$outcomes['Redirect']++;
 
-			$output .= "<td class=\"rm\">Redirect</td>";
+			$output .= '<td class="rm">Redirect</td>';
 
 		}
 		elseif (preg_match("/merge/", $lowercomment)) {
 
 			$outcomes['Merge']++;
 
-			$output .= "<td class=\"rm\">Merge</td>";
+			$output .= '<td class="rm">Merge</td>';
 
 		}		
 		elseif (preg_match("/no consensus/", $lowercomment)) {
 
 			$outcomes['No consensus']++;
 
-			$output .= "<td class=\"nc\">No consensus</td>";
+			$output .= '<td class="nc">No consensus</td>';
 
 		}	
 		elseif (preg_match("/withdrawn/", $lowercomment)) {
 
 			$outcomes['Speedy keep']++;
 
-			$output .= "<td class=\"keep\">Speedy keep</td>";
+			$output .= '<td class="keep">Speedy keep</td>';
 
 		}	
 		elseif ((preg_match("/move/", $lowercomment)) || (preg_match("/rename/", $lowercomment))) {
 
 			$outcomes['Rename/Move']++;
 
-			$output .= "<td class=\"rm\">Rename/Move</td>";
+			$output .= '<td class="rm">Rename/Move</td>';
 
 		}
 		elseif ((preg_match("/draftify/", $lowercomment)) || (preg_match("/userfy/", $lowercomment))) {
 
 			$outcomes['Draftify/Userfy']++;
 
-			$output .= "<td class=\"rm\">Draftify/Userfy</td>";
+			$output .= '<td class="rm">Draftify/Userfy</td>';
 
 		}			
 		else {
@@ -290,13 +291,15 @@ HTML;
 <html> 
 <head>
   <meta charset="UTF-8">
-<title>SoWhy's AFD analyzer (v0.02)</title>
+<title>SoWhy's AFD analyzer (v0.03)</title>
 <link rel="stylesheet" type="text/css" href="sowhy.css">
 
   <link rel="stylesheet" href="jquery-ui/jquery-ui.css">
   <link rel="stylesheet" href="jquery-ui/style.css">
   <script src="jquery-ui/jquery.js"></script>
   <script src="jquery-ui/jquery-ui.js"></script>
+  <script src="jquery-ui/jquery.tablesorter.js"></script>
+  <script src="jquery-ui/jquery.metadata.js"></script>
   <script>
   $( function() {
     var dateFormat = "mm/dd/yy",
@@ -333,7 +336,24 @@ HTML;
       return date;
     }
   } );
+  
+  $(document).ready(function(){
+    $("form").submit(function(){
+        $("input").each(function(index, obj){
+            if($(obj).val() == "") {
+                $(obj).remove();
+            }
+        });
+    });
+  });
+
+  $(document).ready(function() 
+    { 
+        $("#results").tablesorter(); 
+    } 
+  ); 
     
+
   </script>
   
 <?php
@@ -406,7 +426,7 @@ echo '<div id="piechart" style="width: 900px; height: 500px;"></div>';
 echo $output; 
 
 ?>
-<div id="footer">A <a href="https://en.wikipedia.org/wiki/User:SoWhy" target="new"><span style="font-variant: small-caps"><span style="color: #7A2F2F">So</span><span style="color: #474F84">Why</span></span></a> script. Feedback welcome.<br/>Uses <a href="https://developers.google.com/chart/" target="new">Google chart tools</a>. Source code available upon request.
+<div id="footer">A <a href="https://en.wikipedia.org/wiki/User:SoWhy" target="new"><span style="font-variant: small-caps"><span style="color: #7A2F2F">So</span><span style="color: #474F84">Why</span></span></a> script. Feedback welcome.<br/>Uses <a href="https://developers.google.com/chart/" target="new">Google chart tools</a> and <a href="https://jquery.com/" target="new">jQuery</a>. Source code available at <a href="https://github.com/SoWhy/wp-tools" target="new">GitHub</a>
 
 </div>
 </body>
