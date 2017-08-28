@@ -1,5 +1,9 @@
 <?php
 
+/*
+AFDCloses.php - Script to analyze how users have closed Articles for deletion discussions on en-wiki
+*/
+
 if (
 ($_GET['user']) && 
 (strlen($_GET['user']) <= 100) && 
@@ -62,7 +66,7 @@ if (!$result_u = $mysqli->query($sql_c)) {
 
 if ($result_u->num_rows === 0) {
     echo '<h1>No such user!</h1>
-    <a href="afdstats.php">&lt;&lt;&lt; Try again</a>';
+    <a href="afdcloses.php">&lt;&lt;&lt; Try again</a>';
     exit;
 }
 
@@ -241,7 +245,7 @@ else {
 else {
 // Standard form
 $output .= <<<HTML
-<form action="afdstats.php" method="get">
+<form action="afdcloses.php" method="get">
 	<table border="0">
 		<tr>
 			<td><b>User:</b></td>
@@ -416,7 +420,7 @@ if ($outcomes && ($_GET['chart'] == "yes")) {
 <?php 
 if ($header) {
 echo $header;
-echo '<a href="afdstats.php">&lt;&lt;&lt; Query another user</a><br/>';
+echo '<a href="afdcloses.php">&lt;&lt;&lt; Query another user</a><br/>';
 }
 
 if ($outcomes && ($_GET['chart'] == "yes")) {
