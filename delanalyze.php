@@ -285,7 +285,7 @@ while ($entry = $result->fetch_assoc()) {
 
 
 //Display info about number of deletions
-if (((int)$_GET['limitnum']) && (array_sum($delreasons) >= (int)$_GET['limitnum'])) {
+if (($_GET['limit'] == "number") && (array_sum($delreasons) >= (int)$_GET['limitnum'])) {
 
   $header .= "Displaying the last <strong>" . number_format(array_sum($delreasons)) . "</strong> deletions by this user<br/>";
 
@@ -303,7 +303,40 @@ else {
 }
 
 // Generate the output for the data processed
-
+ 
+  //Create array for JS and use the same function to create table with data. Moves the generation of the JS code outside the rest of the JS but this way we only need to foreach() once
+    // Reasons
+    foreach ($delreasons as $key => $value) {
+      if ($_GET['chart'] == "yes") {
+	if (!($value == 0)) {
+      	$chartcode_dr .=  "['" . $key . "', " . $value . "],\n";
+      	}      
+      }
+	    
+      $dr_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
+    }
+    // XFD
+    foreach ($delreasons as $key => $value) {
+      if ($_GET['chart'] == "yes") {
+	if (!($value == 0)) {
+      	$chartcode_xfd .=  "['" . $key . "', " . $value . "],\n";
+      	}      
+      }
+	    
+      $xfd_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
+    }
+    // Speedy
+    foreach ($delreasons as $key => $value) {
+      if ($_GET['chart'] == "yes") {
+	if (!($value == 0)) {
+      	$chartcode_sd .=  "['" . $key . "', " . $value . "],\n";
+      	}      
+      
+	    
+      $sd_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
+      }      
+    }
+	
 // Generate chart js if requested
 if ($_GET['chart'] == "yes") {
 
@@ -315,16 +348,7 @@ $chartcode .= <<<HTML
           ['Type of deletion', 'Amount'],
 HTML;
 
-//Create array for JS and use the same function to create table with data
-
-    foreach ($delreasons as $key => $value) {
-      if (!($value == 0)) {
-      $chartcode .=  "['" . $key . "', " . $value . "],\n";
-      }      
-      
-      $dr_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
-
-    }
+echo $chartcode_dr;
 
 $chartcode .= <<<HTML
     ]);
@@ -356,15 +380,7 @@ $chartcode .= <<<HTML
           ['Type of XFD', 'Amount'],
 HTML;
 
-//Create array for JS and use the same function to create table with data
-    foreach ($xfd as $key => $value) {
-      if (!($value == 0)) {
-      $chartcode .=  "['" . $key . "', " . $value . "],\n";
-      }
-      
-      $xfd_output .= "<tr><td><a href='http://en.wikipedia.org/wiki/WP:$key' target=new>$key</a></td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($xfd))) * 100), 2) . "%</td></tr>";
-      
-    }
+echo $chartcode_xfd;
 
 $chartcode .= <<<HTML
     ]);
@@ -395,15 +411,8 @@ $chartcode .= <<<HTML
         var data = google.visualization.arrayToDataTable([
           ['Speedy criterion', 'Amount'],
 HTML;
-
-//Create array for JS and use the same function to create table with data (not showing empty fields in both cases
-    foreach ($csdreasons as $key => $value) {
-      if (!($value == 0)) {
-      $chartcode .=  "['" . $key . "', " . $value . "],\n";
-            
-      $sd_output .= "<tr><td><a href='http://en.wikipedia.org/wiki/WP:CSD#$key' target=new>$key</a></td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($csdreasons))) * 100), 2) . "%</td></tr>";
-      }
-    }
+	
+echo $chartcode_sd;
 
 $chartcode .= <<<HTML
     ]);
@@ -587,7 +596,7 @@ echo '<a href="delanalyze.php">&lt;&lt;&lt; Query another user</a><br/>';
 if ($_GET['chart'] == "yes") {
 echo '<div id="delreasons_div" style="width: 500px; height: 350px;"></div>';
 }
-echo "<table width='100%'><theader><th>Type</th><th>Amount</th><th>Percentage</th></theader><tbody>$dr_output</tbody></table>";
+echo "<table width='100%' class='tablesorter'><tr><th class='header'>Type</th><th class='header'>Amount</th><th class='header'>Percentage</th></tr><tbody>$dr_output</tbody></table>";
 ?>
 </div>
 <div class="box">
@@ -595,7 +604,7 @@ echo "<table width='100%'><theader><th>Type</th><th>Amount</th><th>Percentage</t
 if ($_GET['chart'] == "yes") {
 echo '<div id="xfds_div" style="width: 500px; height: 350px;"></div>';
 }
-echo "<table width='100%'><theader><th>XFD</th><th>Amount</th><th>Percentage</th></theader><tbody>$xfd_output</tbody></table>";
+echo "<table width='100%' class='tablesorter'><tr><th class='header'>XFD</th><th class='header'>Amount</th><th class='header'>Percentage</th></tr><tbody>$xfd_output</tbody></table>";
 ?>
 </div>
 <div class="box">
@@ -603,7 +612,7 @@ echo "<table width='100%'><theader><th>XFD</th><th>Amount</th><th>Percentage</th
 if ($_GET['chart'] == "yes") {
 echo '<div id="speedy_div" style="width: 500px; height: 350px;"></div>';
 }
-echo "<table width='100%'><theader><th>Criterion</th><th>Amount</th><th>Percentage</th></theader><tbody>$sd_output</tbody></table>";
+echo "<table width='100%' class='tablesorter'><tr><th class='header'>Criterion</th><th class='header'>Amount</th><th class='header'>Percentage</th></tr><tbody>$sd_output</tbody></table>";
 
 
 ?></div></div><?php
