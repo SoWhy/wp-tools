@@ -10,7 +10,7 @@ Released under the MIT License: https://opensource.org/licenses/MIT
 
 */
 
-$version = "0.02α (2017/09/01)";
+$version = "0.03α (2017/09/01)";
 
 if (
 ($_GET['user']) && 
@@ -195,11 +195,11 @@ if (!$result = $mysqli->query($sql)) {
 // Parse results
 while ($entry = $result->fetch_assoc()) {
 
- 	$lowercomment = str_replace("_", " ", strtolower($entry['comment']));
+$lowercomment = str_replace("_", " ", strtolower($entry['comment']));
 
   // Sort deletions by reason 
   
-  if(preg_match("/multiple reasons/", $lowercomment)) {
+   if(preg_match("/multiple reasons/", $lowercomment)) {
     
     $delreasons['SD']++;
 
@@ -207,7 +207,7 @@ while ($entry = $result->fetch_assoc()) {
   
     foreach($matches[0] as $criterion) {
 
-    $criterion = strtoupper(str_replace("wp:", "", $criterion));
+      $criterion = strtoupper(str_replace("wp:", "", $criterion));
            
       // Add criterion to array if correctly identified 
       if (array_key_exists("$criterion", $csdreasons)) {
@@ -219,8 +219,8 @@ while ($entry = $result->fetch_assoc()) {
     }
     
   } 
-  
-  elseif(preg_match("/[[wp:csd#[a-z][0-9]{1,2}/", $lowercomment)) {
+ 
+   elseif(preg_match("/[[wp:csd#[a-z][0-9]{1,2}/", $lowercomment)) {
     $delreasons['SD']++;
 
     $criterion = strtoupper(GetBetween("[[wp:csd#", "|", $lowercomment));
@@ -251,36 +251,40 @@ while ($entry = $result->fetch_assoc()) {
   elseif(preg_match("/wp:prod/", $lowercomment)) {
     $delreasons['PROD']++;
 	}
-	elseif(preg_match("/wp:blpprod/", $lowercomment)) {
+   elseif(preg_match("/wp:blpprod/", $lowercomment)) {
     $delreasons['BLPPROD']++;
 	}
-	elseif(preg_match("/articles for deletion/", $lowercomment)) {
+   elseif(preg_match("/articles for deletion/", $lowercomment)) {
     $delreasons['XFD']++;
     $xfd['AFD']++;
 	}
-	elseif(preg_match("/redirects for discussion/", $lowercomment)) {
+   elseif(preg_match("/redirects for discussion/", $lowercomment)) {
     $delreasons['XFD']++;
     $xfd['RFD']++;
 	}
-	elseif((preg_match("/templates for discussion/", $lowercomment)) || (preg_match("/templates for deletion/", $lowercomment))) {
+   elseif((preg_match("/templates for discussion/", $lowercomment)) || (preg_match("/templates for deletion/", $lowercomment))) {
     $delreasons['XFD']++;
     $xfd['TFD']++;
 	}
-	elseif(preg_match("/files for discussion/", $lowercomment)) {
+   elseif(preg_match("/files for discussion/", $lowercomment)) {
     $delreasons['XFD']++;
     $xfd['FFD']++;
 	}
-	elseif(preg_match("/categories for discussion/", $lowercomment)) {
+   elseif(preg_match("/categories for discussion/", $lowercomment)) {
     $delreasons['XFD']++;
     $xfd['CFD']++;
 	}
-	elseif(preg_match("/miscellany for deletion/", $lowercomment)) {
+   elseif(preg_match("/miscellany for deletion/", $lowercomment)) {
     $delreasons['XFD']++;
     $xfd['MFD']++;
 	}
-	else {
+   else {
     $delreasons['Other']++;
     
+    if ($_GET['displayother'] == "yes") {
+	    
+	    $otherreasons .= $entry['comment']) . "<br/>\n";
+	    
 	}
 
 }
@@ -446,17 +450,18 @@ else {
 // Standard form
 $output .= <<<HTML
 <form action="delanalyze.php" method="get">
-	<table border="0">
-		<tr>
-			<td><b>User:</b></td>
-			<td colspan="2"><input type=text name="user" maxlength="85"></td>
-		</tr>
-		<tr>
-			<td><b>Create pie chart?</b></td>
-			<td colspan="2">
-        <input type="radio" name="chart" value="yes" checked>Yes <input type="radio" name="chart" value="no">No<br></td>
-		</tr>
-		<tr>
+<table border="0">
+    <tr>
+	<td><b>User:</b></td>
+	<td colspan="2"><input type=text name="user" maxlength="85"></td>
+    </tr>
+    <tr>
+	<td><b>Create pie chart?</b></td>
+	<td colspan="2">
+        	<input type="radio" name="chart" value="yes" checked>Yes <input type="radio" name="chart" value="no">No
+	</td>
+    </tr>
+    <tr>
       <td><b>Limit output?</b></td>
       <td colspan="2"><label><div style="width: 100%"><input type="radio" name="limit" value="" id="no" checked>No</b></div></label></td>
     </tr>
@@ -474,16 +479,23 @@ $output .= <<<HTML
        <input type="text" id="from" name="from"><input type="text" id="to" name="to"></label>
       </td>
     </tr>
-		<tr>
-			<td align="right" colspan="3"><input type="submit" value="Get stats"></td>
-		</tr>
-	</table>
-	</form>
+    <tr>
+	<td>
+		<b>Display "other" reasons?</b><br/>
+		<small>Will display all comments that the script was unable to sort into one of the categories. Depending on the user in question, this can be a lot of data.</small>
+	</td>
+	<td colspan="2"><input type="radio" name="displayother" value="yes">Yes <input type="radio" name="displayother" value="no" checked>No<br></td>
+    </tr>
+    <tr>
+	<td align="right" colspan="3"><input type="submit" value="Get stats"></td>
+    </tr>
+</table>
+</form>
 	
-	<h4>Notes:</h4>
-	<ul>
-    <li>This script only works with deletions that follow a certain standard. Deletions without reasoning or non-standardized reasons (especially very old speedy deletions) will not be interpreted correctly.</li>
-    <li>The results will include mistakes when it comes to speedy deletions since I cannot figure out a sure way to identify multiple criteria in a single deletion comment. Feel free to tell me if you think of a way.</li>
+<h4>Notes:</h4>
+  <ul>
+    <li>This script only works with deletions that follow a certain standard. Deletions without reasoning or non-standardized reasons (like very old speedy deletions) will not be interpreted correctly.</li>
+    <li>The results will include mistakes when it comes to speedy deletions since I cannot figure out a sure way to identify multiple criteria in a single deletion comment. The script uses preg_match_all() for this and should find most of them though. Feel free to tell me if you think of a better way.</li>
   </ul>
 HTML;
 
@@ -599,6 +611,16 @@ if ($_GET['chart'] == "yes") {
 echo '<div id="delreasons_div" style="width: 500px; height: 350px;"></div>';
 }
 echo "<table width='100%' class='tablesorter'><tr><th class='header'>Type</th><th class='header'>Amount</th><th class='header'>Percentage</th></tr><tbody>$dr_output</tbody></table>";
+
+// Display a list of unparsed reasons if requested
+if ($_GET['displayother'] == "yes") {
+    
+    ?><h5>Deletions that could not be parsed:</h5><?php
+    
+    echo "<div class='collapsebox'>$otherreasons</div>";
+    
+}
+    
 ?>
 </div>
 <div class="box">
