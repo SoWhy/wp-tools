@@ -10,6 +10,8 @@ Released under the MIT License: https://opensource.org/licenses/MIT
 
 */
 
+$version = "0.02α (2017/09/01)";
+
 if (
 ($_GET['user']) && 
 (strlen($_GET['user']) <= 100) && 
@@ -493,7 +495,7 @@ HTML;
 <html> 
 <head>
   <meta charset="UTF-8">
-<title>SoWhy's Deletion analyzer (v0.01)</title>
+<title>SoWhy's Deletion analyzer (?> echo $version; <?php)</title>
 <link rel="stylesheet" type="text/css" href="sowhy.css">
 
   <link rel="stylesheet" href="jquery-ui/jquery-ui.css">
