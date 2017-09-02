@@ -10,7 +10,7 @@ Released under the MIT License: https://opensource.org/licenses/MIT
 
 */
 
-$version = "0.03α (2017/09/02)";
+$version = "0.05α (2017/09/02)";
 $maxlimit = 500000;
 
 if (
@@ -324,33 +324,33 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
   }
 
 
-  elseif(preg_match("/wp:prod/", $lowercomment)) {
+  elseif (preg_match("/wp:prod/", $lowercomment)) {
     $delreasons['PROD']++;
 	}
-   elseif(preg_match("/wp:blpprod/", $lowercomment)) {
+   elseif (preg_match("/wp:blpprod/", $lowercomment)) {
     $delreasons['BLPPROD']++;
 	}
-   elseif(preg_match("/articles for deletion/", $lowercomment)) {
+   elseif ((preg_match("/articles for deletion/", $lowercomment)) || (preg_match("/votes for deletion/", $lowercomment))) {
     $delreasons['XFD']++;
     $xfd['AFD']++;
 	}
-   elseif(preg_match("/redirects for discussion/", $lowercomment)) {
+   elseif ((preg_match("/redirects for discussion/", $lowercomment)) || (preg_match("/redirects for deletion/", $lowercomment)) {
     $delreasons['XFD']++;
     $xfd['RFD']++;
 	}
-   elseif((preg_match("/templates for discussion/", $lowercomment)) || (preg_match("/templates for deletion/", $lowercomment))) {
+   elseif ((preg_match("/templates for discussion/", $lowercomment)) || ((preg_match("/templates for deletion/", $lowercomment))) {
     $delreasons['XFD']++;
     $xfd['TFD']++;
 	}
-   elseif(preg_match("/files for discussion/", $lowercomment)) {
+   elseif ((preg_match("/files for discussion/", $lowercomment)) || (preg_match("/files for deletion/", $lowercomment)) || (preg_match("/images for deletion/", $lowercomment)) || (preg_match("/images and media for deletion/", $lowercomment))) {
     $delreasons['XFD']++;
     $xfd['FFD']++;
 	}
-   elseif(preg_match("/categories for discussion/", $lowercomment)) {
+   elseif ((preg_match("/categories for discussion/", $lowercomment)) || (preg_match("/categories for deletion/", $lowercomment))) {
     $delreasons['XFD']++;
     $xfd['CFD']++;
 	}
-   elseif(preg_match("/miscellany for deletion/", $lowercomment)) {
+   elseif ((preg_match("/miscellaneous deletion/", $lowercomment)) || (preg_match("/miscellany for deletion/", $lowercomment))) {
     $delreasons['XFD']++;
     $xfd['MFD']++;
 	}
