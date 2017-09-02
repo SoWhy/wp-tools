@@ -10,7 +10,7 @@ Released under the MIT License: https://opensource.org/licenses/MIT
 
 */
 
-$version = "0.03α (2017/09/01)";
+$version = "0.03α (2017/09/02)";
 
 if (
 ($_GET['user']) && 
@@ -283,12 +283,17 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
     
     if ($_GET['displayother'] == "yes") {
 	    
-	    $otherreasons .= $entry['comment']) . "<br/>\n";
+	    if ($entry['comment'] == "") {
+        $entry['comment'] = "&nbsp;";
+      }
+        
+	    $otherreasons .= "<tr class='other'><td>" . $entry['comment'] . "</td></tr>\n";
 	    
 	}
 
 }
 
+}
 
 //Display info about number of deletions
 if (($_GET['limit'] == "number") && (array_sum($delreasons) >= (int)$_GET['limitnum'])) {
@@ -322,7 +327,7 @@ else {
       $dr_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
     }
     // XFD
-    foreach ($delreasons as $key => $value) {
+    foreach ($xfd as $key => $value) {
       if ($_GET['chart'] == "yes") {
 	if (!($value == 0)) {
       	$chartcode_xfd .=  "['" . $key . "', " . $value . "],\n";
@@ -332,14 +337,13 @@ else {
       $xfd_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
     }
     // Speedy
-    foreach ($delreasons as $key => $value) {
+    foreach ($csdreasons as $key => $value) {
+      if (!($value == 0)) {
       if ($_GET['chart'] == "yes") {
-	if (!($value == 0)) {
       	$chartcode_sd .=  "['" . $key . "', " . $value . "],\n";
       	}      
       
-	    
-      $sd_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
+	    $sd_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
       }      
     }
 	
@@ -354,7 +358,7 @@ $chartcode .= <<<HTML
           ['Type of deletion', 'Amount'],
 HTML;
 
-echo $chartcode_dr;
+$chartcode .= $chartcode_dr;
 
 $chartcode .= <<<HTML
     ]);
@@ -386,7 +390,7 @@ $chartcode .= <<<HTML
           ['Type of XFD', 'Amount'],
 HTML;
 
-echo $chartcode_xfd;
+$chartcode .= $chartcode_xfd;
 
 $chartcode .= <<<HTML
     ]);
@@ -418,7 +422,7 @@ $chartcode .= <<<HTML
           ['Speedy criterion', 'Amount'],
 HTML;
 	
-echo $chartcode_sd;
+$chartcode .= $chartcode_sd;
 
 $chartcode .= <<<HTML
     ]);
@@ -444,7 +448,6 @@ HTML;
 }
 
 }
-
 // How to handle calls to the script with no or wrong variables
 else {
 // Standard form
@@ -480,7 +483,7 @@ $output .= <<<HTML
       </td>
     </tr>
     <tr>
-	<td>
+	<td style="width:250px">
 		<b>Display "other" reasons?</b><br/>
 		<small>Will display all comments that the script was unable to sort into one of the categories. Depending on the user in question, this can be a lot of data.</small>
 	</td>
@@ -507,7 +510,7 @@ HTML;
 <html> 
 <head>
   <meta charset="UTF-8">
-<title>SoWhy's Deletion analyzer (?> echo $version; <?php)</title>
+<title>SoWhy's Deletion analyzer (<?php echo $version; ?>)</title>
 <link rel="stylesheet" type="text/css" href="sowhy.css">
 
   <link rel="stylesheet" href="jquery-ui/jquery-ui.css">
@@ -613,11 +616,12 @@ echo '<div id="delreasons_div" style="width: 500px; height: 350px;"></div>';
 echo "<table width='100%' class='tablesorter'><tr><th class='header'>Type</th><th class='header'>Amount</th><th class='header'>Percentage</th></tr><tbody>$dr_output</tbody></table>";
 
 // Display a list of unparsed reasons if requested
-if ($_GET['displayother'] == "yes") {
+if (($_GET['displayother'] == "yes") && ($otherreasons)) {
     
-    ?><h5>Deletions that could not be parsed:</h5><?php
-    
-    echo "<div class='collapsebox'>$otherreasons</div>";
+    ?>
+    <input id="toggle" type="checkbox" style="display:none"><label for="toggle" class="expand">Deletion reasons that could not be parsed</label>
+    <?php    
+    echo "<div id='expand'><table>$otherreasons</table></div>";
     
 }
     
