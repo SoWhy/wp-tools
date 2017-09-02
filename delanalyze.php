@@ -11,6 +11,7 @@ Released under the MIT License: https://opensource.org/licenses/MIT
 */
 
 $version = "0.03α (2017/09/02)";
+$maxlimit = 500000;
 
 if (
 ($_GET['user']) && 
@@ -101,9 +102,10 @@ $csdreasons = array(
 
 $delreasons = array(
 'XFD' => 0,
-'SD' => 0,
+'Speedy deletion' => 0,
 'PROD' => 0,
 'BLPPROD' => 0,
+'Old file revisions' => 0,
 'Other' => 0
 ); 
 
@@ -158,8 +160,8 @@ $sql = 'SELECT log_timestamp AS "timestamp", log_namespace AS "namespace", log_t
 if ($_GET['limit'] == "number") {
   
   // Set a hard limit to avoid huge deletion logs from crashing the script
-  if ((int)$_GET['limitnum'] > 100000) {
-    $_GET['limitnum'] = 100000;
+  if ((int)$_GET['limitnum'] > $maxlimit) {
+    $_GET['limitnum'] = $maxlimit;
     }
     
 $sql .= '
@@ -178,7 +180,7 @@ else {
 // Add a hard max limit to avoid huge deletion logs from crashing the script
 $sql .= '
 ORDER BY log_timestamp DESC
-LIMIT 100000';
+LIMIT ' . $maxlimit;
 }
 
 $header .= "<b>User:</b> $username<br/>";
@@ -201,7 +203,7 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
   
    if(preg_match("/multiple reasons/", $lowercomment)) {
     
-    $delreasons['SD']++;
+    $delreasons['Speedy deletion']++;
 
     preg_match_all("/wp:[a-z][0-9]{1,2}/", $lowercomment, $matches);
   
@@ -221,7 +223,7 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
   } 
  
    elseif(preg_match("/[[wp:csd#[a-z][0-9]{1,2}/", $lowercomment)) {
-    $delreasons['SD']++;
+    $delreasons['Speedy deletion']++;
 
     $criterion = strtoupper(GetBetween("[[wp:csd#", "|", $lowercomment));
     
@@ -235,7 +237,7 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
   } 
  
   elseif(preg_match("/[[wp:[a-z][0-9]{1,2}/", $lowercomment)) {
-    $delreasons['SD']++;
+    $delreasons['Speedy deletion']++;
     
     $criterion =  strtoupper(GetBetween("[[wp:", "|", $lowercomment));
     
@@ -278,6 +280,10 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
     $delreasons['XFD']++;
     $xfd['MFD']++;
 	}
+	elseif(preg_match("/deleted old revision/", $lowercomment)) {
+	$delreasons['Old file revisions']++;
+	}
+	
    else {
     $delreasons['Other']++;
     
@@ -287,7 +293,7 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
         $entry['comment'] = "&nbsp;";
       }
         
-	    $otherreasons .= "<tr class='other'><td>" . $entry['comment'] . "</td></tr>\n";
+	    $otherreasons .= "<tr class='other'><td>" . $entry['timestamp'] . "</td><td>" . $entry['comment'] . "</td></tr>\n";
 	    
 	}
 
@@ -324,7 +330,7 @@ else {
       	}      
       }
 	    
-      $dr_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
+      $dr_output .= "<tr><td>$key</td><td class='right'>" . number_format($value) . "</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
     }
     // XFD
     foreach ($xfd as $key => $value) {
@@ -334,7 +340,7 @@ else {
       	}      
       }
 	    
-      $xfd_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
+      $xfd_output .= "<tr><td>$key</td><td class='right'>" . number_format($value) . "</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
     }
     // Speedy
     foreach ($csdreasons as $key => $value) {
@@ -343,7 +349,7 @@ else {
       	$chartcode_sd .=  "['" . $key . "', " . $value . "],\n";
       	}      
       
-	    $sd_output .= "<tr><td>$key</td><td class='right'>$value</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
+	    $sd_output .= "<tr><td>$key</td><td class='right'>" . number_format($value) . "</td><td class='right'>" . number_format((($value / (array_sum($delreasons))) * 100), 2) . "%</td></tr>";
       }      
     }
 	
@@ -621,7 +627,7 @@ if (($_GET['displayother'] == "yes") && ($otherreasons)) {
     ?>
     <input id="toggle" type="checkbox" style="display:none"><label for="toggle" class="expand">Deletion reasons that could not be parsed</label>
     <?php    
-    echo "<div id='expand'><table>$otherreasons</table></div>";
+    echo "<div id='expand'><table><tr><th>Timestamp</th><th>Comment</th>$otherreasons</table></div>";
     
 }
     
