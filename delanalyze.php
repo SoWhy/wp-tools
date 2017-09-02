@@ -334,11 +334,11 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
     $delreasons['XFD']++;
     $xfd['AFD']++;
 	}
-   elseif ((preg_match("/redirects for discussion/", $lowercomment)) || (preg_match("/redirects for deletion/", $lowercomment)) {
+   elseif ((preg_match("/redirects for discussion/", $lowercomment)) || (preg_match("/redirects for deletion/", $lowercomment))) {
     $delreasons['XFD']++;
     $xfd['RFD']++;
 	}
-   elseif ((preg_match("/templates for discussion/", $lowercomment)) || ((preg_match("/templates for deletion/", $lowercomment))) {
+   elseif ((preg_match("/templates for discussion/", $lowercomment)) || (preg_match("/templates for deletion/", $lowercomment))) {
     $delreasons['XFD']++;
     $xfd['TFD']++;
 	}
