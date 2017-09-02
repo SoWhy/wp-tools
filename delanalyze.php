@@ -10,7 +10,7 @@ Released under the MIT License: https://opensource.org/licenses/MIT
 
 */
 
-$version = "0.05α (2017/09/02)";
+$version = "0.06α (2017/09/02)";
 $maxlimit = 500000;
 
 if (
@@ -106,6 +106,7 @@ $delreasons = array(
 'PROD' => 0,
 'BLPPROD' => 0,
 'Old file revisions' => 0,
+'Revision deletion' => 0,
 'Other' => 0
 ); 
 
@@ -226,7 +227,8 @@ else {
 //Actual query - since we need all entries anyway, no point in sorting through them before
 $sql = 'SELECT log_timestamp AS "timestamp", log_namespace AS "namespace", log_title AS "page", log_comment AS "comment"
  FROM logging_userindex
- WHERE log_action = "delete"
+ WHERE log_type = "delete" 
+ AND (log_action = "delete" OR log_action = "revision")
  AND log_user = ' . $userid . '';
 
 // Add limit if requested
@@ -295,10 +297,10 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
     
   } 
  
-   elseif(preg_match("/[[wp:csd#[a-z][0-9]{1,2}/", $lowercomment)) {
+   elseif(preg_match("/\[\[wp:c?sd#[a-z][0-9]{1,2}/", $lowercomment)) {
     $delreasons['Speedy deletion']++;
 
-    $criterion = strtoupper(GetBetween("[[wp:csd#", "|", $lowercomment));
+    $criterion = strtoupper(GetBetween("sd#", "|", $lowercomment));
     
     // Add criterion to array if correctly identified 
     if (array_key_exists("$criterion", $csdreasons)) {
@@ -308,8 +310,22 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
     }
       
   } 
- 
-  elseif(preg_match("/[[wp:[a-z][0-9]{1,2}/", $lowercomment)) {
+  
+    elseif(preg_match("/criteria for speedy deletion#[a-z][0-9]{1,2}/", $lowercomment)) {
+    $delreasons['Speedy deletion']++;
+
+    $criterion = strtoupper(GetBetween("criteria for speedy deletion#", "|", $lowercomment));
+    
+    // Add criterion to array if correctly identified 
+    if (array_key_exists("$criterion", $csdreasons)) {
+    
+      $csdreasons["$criterion"]++;
+    
+    }
+      
+  } 
+  elseif(preg_match("/\[\[wp:[a-z][0-9]{1,2}/", $lowercomment)) {
+    
     $delreasons['Speedy deletion']++;
     
     $criterion =  strtoupper(GetBetween("[[wp:", "|", $lowercomment));
@@ -322,8 +338,30 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
     }
     
   }
-
-
+  
+  elseif(preg_match("/\[\[wikipedia:[a-z][0-9]{1,2}/", $lowercomment)) {
+    
+    $delreasons['Speedy deletion']++;
+    
+    $criterion =  strtoupper(GetBetween("[[wikipedia:", "|", $lowercomment));
+    
+   
+    // Add criterion to array if correctly identified 
+    if (array_key_exists("$criterion", $csdreasons)) {
+    
+      $csdreasons["$criterion"]++;
+    
+    }
+    
+  }
+  
+  elseif((preg_match("/\[\[wp:rd[0-9]/", $lowercomment)) || (preg_match("/\[\[wikipedia:rd[0-9]/", $lowercomment)))  {
+    
+    $delreasons['Revision deletion']++;
+    
+  }
+    
+  
   elseif (preg_match("/wp:prod/", $lowercomment)) {
     $delreasons['PROD']++;
 	}
