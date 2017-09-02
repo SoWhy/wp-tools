@@ -4,6 +4,10 @@ font-size: 0.9rem;
 color: 474F84;
 }
 
+small {
+font-size: 0.7rem;
+}
+
 a {
 text-decoration: none;
 color: #7A2F2F;
@@ -34,6 +38,10 @@ tr.afd:nth-child(even) {
 
 background-color: #f2f2f2;
 
+} 
+
+tr.other:nth-child(even) {
+background-color: #f2f2f2;
 } 
 
 /* Styles for tablesorter */
@@ -125,4 +133,40 @@ justify-content: flex-start;
 margin: 0.5rem;
 text-align: center;
 border: 1px solid #eee;
+}
+
+// Code for collapsible box
+label.expand {
+  display: block;
+  padding: 0.5em;
+  text-align: center;
+}
+label.expand:hover {
+  color: #555;
+}
+label.expand::before {
+  font-family: Consolas, monaco, monospace;
+  font-weight: bold;
+  font-size: 15px;
+  content: "+";
+  vertical-align: text-top;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 3px;
+  background: radial-gradient(ellipse at center, #CCC 50%, transparent 50%);
+}
+#expand {
+  height: 0px;
+  overflow: hidden;
+  transition: height 0.5s;
+}
+
+#toggle:checked ~ #expand {
+  height: 400px;
+  overflow: auto;
+
+}
+#toggle:checked ~ label.expand::before {
+  content: "-";
 }
