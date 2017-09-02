@@ -118,6 +118,79 @@ $xfd = array(
 'MFD' => 0,
 );
 
+//try to match as many csd templates as possible
+$csdtemplates = array(
+'db-noncom' => 'F3',
+'db-author' => 'G7',
+'db-attack' => 'G10',
+'db-bio' => 'A7',
+'db-band' => 'A7',
+'db-event' => 'A7',
+'db-org' => 'A7',
+'db-corp' => 'A7',
+'db-inc' => 'A7',
+'db-club' => 'A7',
+'db-web' => 'A7',
+'db-animal' => 'A7',
+'nn-bio' => 'A7',
+'nn-band' => 'A7',
+'db-badfairuse' => 'F7',
+'db-blanked' => 'G7',
+'db-blank' => 'A3',
+'db-nonsense' => 'G1',
+'db-vandalism' => 'G3',
+'db-spam' => 'G11',
+'db-copyvio' => 'G12',
+'db-notability' => 'A7',
+'db-nocontext' => 'A1',
+'db-test' => 'G2',
+'db-redirtypo' => 'R3',
+'db-hoax' => 'G3',
+'db-repost' => 'G4',
+'db-banned' => 'G5',
+'db-copypaste' => 'G6',
+'db-disambig' => 'G6',
+'db-error' => 'G6',
+'db-move' => 'G6',
+'db-xfd' => 'G6',
+'db-redircom' => 'G6',
+'db-blankdraft' => 'G6',
+'db-self' => 'G7',
+'db-imagepage' => 'G8',
+'db-redirnone' => 'G8', 
+'db-subpage' => 'G8', 
+'db-talk' => 'G8', 
+'db-templatecat' => 'G8',
+'db-negublp' => 'G10',
+'db-afc' => 'G13',
+'db-draft' => 'G13',
+'db-foreign' => 'A2',
+'db-empty' => 'A3',
+'db-transwiki' => 'A5',
+'db-song' => 'A9',
+'db-album' => 'A9',
+'db-same' => 'A10',
+'db-invented' => 'A11',
+'db-madeup' => 'A11',
+'di-no source' => 'F4', 
+'di-no license' => 'F4', 
+'di-no source no license' => 'F4', 
+'di-dw no source' => 'F4', 
+'di-dw no license' => 'F4', 
+'di-dw no source no license' => 'F4',
+'di-orphaned fair use' => 'F5',
+'di-no fair use rationale' => 'F6', 
+'di-missing article links' => 'F6',
+'db-catempty' => 'C1',
+'db-userreq' => 'U1',
+'db-nouser' => 'U2',
+'db-gallery' => 'U3',
+'db-notwebhost' => 'U5',
+'db-policy' => 'T2',
+'db-duplicatetemplate' => 'T3'
+);
+
+
 //sanitize username
 $username = htmlspecialchars( strip_tags($_GET['user']) );
 $username = str_replace("_", " ", $username);
@@ -249,7 +322,8 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
     }
     
   }
-  
+
+
   elseif(preg_match("/wp:prod/", $lowercomment)) {
     $delreasons['PROD']++;
 	}
@@ -285,19 +359,36 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
 	}
 	
    else {
+    // Try to catch old deletions
+    foreach ($csdtemplates as $template => $crit) {
+      if(preg_match("/$template/", $lowercomment)) {
+    
+        $delreasons['Speedy deletion']++;
+    
+        $csdreasons["$crit"]++;
+    
+        $foundold = 1;
+        
+      }
+    }
+    
+   if ($foundold != 1) {
+    
     $delreasons['Other']++;
     
     if ($_GET['displayother'] == "yes") {
 	    
 	    if ($entry['comment'] == "") {
-        $entry['comment'] = "&nbsp;";
+        $entry['comment'] = " ";
       }
         
-	    $otherreasons .= "<tr class='other'><td>" . $entry['timestamp'] . "</td><td>" . $entry['comment'] . "</td></tr>\n";
+	    $otherreasons .= "<tr class='other'><td>" . $entry['timestamp'] . "</td><td>" . htmlspecialchars(strip_tags($entry['comment'])) . "</td></tr>\n";
+	  
 	    
-	}
-
-}
+      }
+    }
+  	  $foundold = 0;
+  }
 
 }
 
