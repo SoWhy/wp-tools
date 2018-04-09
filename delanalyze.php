@@ -4,13 +4,13 @@
 
 DelAnalyze.php - Script to analyze deletions
 
-(C) 2017 Alessandro Fuschi (SoWhy) // sowhy@sowhy.de
+(C) 2017-2018 Alessandro Fuschi (SoWhy) // sowhy@sowhy.de
 
 Released under the MIT License: https://opensource.org/licenses/MIT
 
 */
 
-$version = "0.06α (2017/09/02)";
+$version = "0.07α (2018-04-09)";
 $maxlimit = 500000;
 
 if (
@@ -397,7 +397,7 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
 	}
 	
    else {
-    // Try to catch old deletions
+    // Try to catch old deletions based on templates
     foreach ($csdtemplates as $template => $crit) {
       if(preg_match("/$template/", $lowercomment)) {
     
@@ -409,6 +409,19 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
         
       }
     }
+	   
+    // Try to catch old deletions based on db-xx
+    if(preg_match("/\{\{db-[a-z][0-9]{1,2}\}\}/", $lowercomment)) {
+    
+        $delreasons['Speedy deletion']++;
+        
+	$crit =  strtoupper(GetBetween("{{db-", "}}", $lowercomment));
+
+        $csdreasons["$crit"]++;
+    
+        $foundold = 1;
+        
+      }   
     
    if ($foundold != 1) {
     
@@ -420,7 +433,7 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
         $entry['comment'] = " ";
       }
         
-	    $otherreasons .= "<tr class='other'><td>" . $entry['timestamp'] . "</td><td>" . htmlspecialchars(strip_tags($entry['comment'])) . "</td></tr>\n";
+	    $otherreasons .= "<tr class='other'><td>" . date("d M Y, h:i \(\\U\\T\C)", strtotime($entry['timestamp'])) . "</td><td>" . htmlspecialchars(strip_tags($entry['page'])) ."</td><td>" . htmlspecialchars(strip_tags($entry['comment'])) . "</td></tr>\n";
 	  
 	    
       }
@@ -756,7 +769,7 @@ if (($_GET['displayother'] == "yes") && ($otherreasons)) {
     ?>
     <input id="toggle" type="checkbox" style="display:none"><label for="toggle" class="expand">Deletion reasons that could not be parsed</label>
     <?php    
-    echo "<div id='expand'><table><tr><th>Timestamp</th><th>Comment</th>$otherreasons</table></div>";
+    echo "<div id='expand'><table><tr><th>Date</th><th>Page name</th><th>Comment</th>$otherreasons</table></div>";
     
 }
     
