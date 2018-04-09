@@ -191,6 +191,43 @@ $csdtemplates = array(
 'db-duplicatetemplate' => 'T3'
 );
 
+// Namespaces
+$namespaces = array(
+0 => "",
+1 => "Talk",
+2 => "User",
+3 => "User talk",
+4 => "Wikipedia",
+5 => "Wikipedia talk",
+6 => "File",
+7 => "File talk",
+8 => "MediaWiki",
+9 => "MediaWiki talk",
+10 => "Template",
+11 => "Template talk",
+12 => "Help",
+13 => "Help talk",
+14 => "Category",
+15 => "Category talk",
+100 => "Portal",
+101 => "Portal talk",
+108 => "Book",
+109 => "Book talk",
+118 => "Draft",
+119 => "Draft talk",
+446 => "Education program",
+447 => "Education program talk",
+710 => "TimedText",
+711 => "TimedText talk",
+828 => "Module",
+829 => "Module talk",
+2300 => "Gadget",
+2301 => "Gadget talk",
+2302 => "Gadget definition",
+2303 => "Gadget definition talk",
+-1 => "Special",
+-2 => "Media"
+);
 
 //sanitize username
 $username = htmlspecialchars( strip_tags($_GET['user']) );
@@ -433,7 +470,7 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
         $entry['comment'] = " ";
       }
         
-	    $otherreasons .= "<tr class='other'><td>" . date("d M Y, h:i \(\\U\\T\C)", strtotime($entry['timestamp'])) . "</td><td>" . htmlspecialchars(strip_tags($entry['page'])) ."</td><td>" . htmlspecialchars(strip_tags($entry['comment'])) . "</td></tr>\n";
+	    $otherreasons .= "<tr class='other'><td>" . date("d M Y, h:i \(\\U\\T\C)", strtotime($entry['timestamp'])) . "</td><td>" . $namespaces[htmlspecialchars(strip_tags($entry['namespace']))] . ":" . str_replace("_", " ", htmlspecialchars(strip_tags($entry['page']))) . "</td><td>" . htmlspecialchars(strip_tags($entry['comment'])) . "</td></tr>\n";
 	  
 	    
       }
