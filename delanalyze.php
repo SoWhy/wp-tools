@@ -287,7 +287,6 @@ AND log.log_timestamp >= ' . $from . '
 AND log.log_timestamp <= ' . $to . '
 ORDER BY log.log_timestamp DESC
 LIMIT ' . $maxlimit;
-';
 }
 
 else {
