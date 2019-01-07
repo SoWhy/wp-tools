@@ -10,7 +10,7 @@ Released under the MIT License: https://opensource.org/licenses/MIT
 
 */
 
-$version = "0.07α (2018-04-09)";
+$version = "0.08α (2019-01-07)";
 $maxlimit = 500000;
 
 if (
@@ -262,11 +262,12 @@ else {
 
 
 //Actual query - since we need all entries anyway, no point in sorting through them before
-$sql = 'SELECT log_timestamp AS "timestamp", log_namespace AS "namespace", log_title AS "page", log_comment AS "comment"
- FROM logging_userindex
- WHERE log_type = "delete" 
- AND (log_action = "delete" OR log_action = "revision")
- AND log_user = ' . $userid . '';
+$sql = 'SELECT log.log_timestamp AS "timestamp", log.log_namespace AS "namespace", log.log_title AS "page", cmt.comment_text AS "comment"
+ FROM logging_userindex AS log
+ LEFT JOIN comment AS cmt ON log.log_comment_id = cmt.comment_id
+ WHERE log.log_type = "delete" 
+ AND (log.log_action = "delete" OR log.log_action = "revision")
+ AND log.log_user = ' . $userid . '';
 
 // Add limit if requested
 if ($_GET['limit'] == "number") {
@@ -277,21 +278,22 @@ if ($_GET['limit'] == "number") {
     }
     
 $sql .= '
-ORDER BY log_timestamp DESC
+ORDER BY log.log_timestamp DESC
 LIMIT ' . (int)$_GET['limitnum'];
 }
 elseif ($_GET['limit'] == "date") {
 $sql .= '
-AND log_timestamp >= ' . $from . '
-AND log_timestamp <= ' . $to . '
-ORDER BY log_timestamp DESC
+AND log.log_timestamp >= ' . $from . '
+AND log.log_timestamp <= ' . $to . '
+ORDER BY log.log_timestamp DESC
+LIMIT ' . $maxlimit;
 ';
-
 }
+
 else {
 // Add a hard max limit to avoid huge deletion logs from crashing the script
 $sql .= '
-ORDER BY log_timestamp DESC
+ORDER BY log.log_timestamp DESC
 LIMIT ' . $maxlimit;
 }
 
