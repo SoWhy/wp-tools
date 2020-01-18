@@ -4,13 +4,13 @@
 
 DelAnalyze.php - Script to analyze deletions
 
-(C) 2017-2018 Alessandro Fuschi (SoWhy) // sowhy@sowhy.de
+(C) 2017-2020 Alessandro Fuschi (SoWhy) // sowhy@sowhy.de
 
 Released under the MIT License: https://opensource.org/licenses/MIT
 
 */
 
-$version = "0.08α (2019-01-07)";
+$version = "0.09α (2020-01-04)";
 $maxlimit = 500000;
 
 if (
@@ -238,12 +238,21 @@ $ts_pw = posix_getpwuid(posix_getuid());
 $ts_mycnf = parse_ini_file($ts_pw['dir'] . "/replica.my.cnf");
 
 $mysqli = new mysqli('enwiki.labsdb', $ts_mycnf['user'], $ts_mycnf['password'], 'enwiki_p');
+if ($mysqli->connect_errno) {
+    die("Verbindung fehlgeschlagen: " . $mysqli->connect_error);
+}
 
 // Check if user actually exists and if so, extract user id
 
 $sql_c = 'SELECT user_id FROM user WHERE user_name = "' . $username . '" LIMIT 1';
 
-if (!$result_u = $mysqli->query($sql_c)) {
+
+$statement = $mysqli->prepare($sql_c);
+$statement->execute();
+
+$result_u = $statement->get_result();
+
+if (!$result_u) {
     echo "<h1>Sorry, the website is experiencing problems.</h1>\n";
     echo "Error: Failed to make a MySQL connection, here is why: \n";
     echo "Errno: " . $mysqli->connect_errno . "\n";
@@ -262,6 +271,7 @@ else {
 
 
 //Actual query - since we need all entries anyway, no point in sorting through them before
+/*
 $sql = 'SELECT log.log_timestamp AS "timestamp", log.log_namespace AS "namespace", log.log_title AS "page", cmt.comment_text AS "comment"
  FROM logging_userindex AS log
  LEFT JOIN comment AS cmt ON log.log_comment_id = cmt.comment_id
@@ -269,14 +279,26 @@ $sql = 'SELECT log.log_timestamp AS "timestamp", log.log_namespace AS "namespace
  AND (log.log_action = "delete" OR log.log_action = "revision")
  AND log.log_user = ' . $userid . '';
 
+*/
+
+// New query 2020 since structure was changed
+$sql = 'SELECT log.log_timestamp AS "timestamp", log.log_namespace AS "namespace", log.log_title AS "page", cmt.comment_text AS "comment"
+ FROM logging AS log
+ LEFT JOIN actor AS act ON log.log_actor = act.actor_id
+ LEFT JOIN comment AS cmt ON log.log_comment_id = cmt.comment_id
+ WHERE log.log_type = "delete"
+ AND (log.log_action = "delete" OR log.log_action = "revision")
+ AND act.actor_user = ' . $userid . '';
+
+
 // Add limit if requested
 if ($_GET['limit'] == "number") {
-  
+
   // Set a hard limit to avoid huge deletion logs from crashing the script
   if ((int)$_GET['limitnum'] > $maxlimit) {
     $_GET['limitnum'] = $maxlimit;
     }
-    
+
 $sql .= '
 ORDER BY log.log_timestamp DESC
 LIMIT ' . (int)$_GET['limitnum'];
@@ -299,7 +321,12 @@ LIMIT ' . $maxlimit;
 $header .= "<b>User:</b> $username<br/>";
 
 // Do query
-if (!$result = $mysqli->query($sql)) {
+$statement = $mysqli->prepare($sql);
+$statement->execute();
+
+$result = $statement->get_result();
+
+if (!$result) {
     echo "<h1>Sorry, the website is experiencing problems.</h1>\n";
     echo "Error: Failed to make a MySQL connection, here is why: \n";
     echo "Errno: " . $mysqli->connect_errno . "\n";
@@ -390,6 +417,23 @@ $lowercomment = str_replace("_", " ", strtolower($entry['comment']));
       $csdreasons["$criterion"]++;
     
     }
+
+}
+
+  elseif(preg_match("/\[\[wikipedia:csd\#[a-z][0-9]{1,2}/", $lowercomment)) {
+
+    $delreasons['Speedy deletion']++;
+
+    $criterion =  strtoupper(GetBetween("[[wikipedia:csd#", "|", $lowercomment));
+
+
+    // Add criterion to array if correctly identified
+    if (array_key_exists("$criterion", $csdreasons)) {
+
+      $csdreasons["$criterion"]++;
+
+    }
+
     
   }
   
