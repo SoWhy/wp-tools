@@ -2,7 +2,14 @@
 
 /*
 AFDCloses.php - Script to analyze how users have closed Articles for deletion discussions on en-wiki
+
+(C) 2017-2020 Alessandro Fuschi (SoWhy) // sowhy@sowhy.de
+
+Released under the MIT License: https://opensource.org/licenses/MIT
+
 */
+
+$version = "0.04α (2020-01-18)";
 
 if (
 ($_GET['user']) && 
@@ -51,12 +58,20 @@ $ts_pw = posix_getpwuid(posix_getuid());
 $ts_mycnf = parse_ini_file($ts_pw['dir'] . "/replica.my.cnf");
 
 $mysqli = new mysqli('enwiki.labsdb', $ts_mycnf['user'], $ts_mycnf['password'], 'enwiki_p');
+if ($mysqli->connect_errno) {
+    die("Verbindung fehlgeschlagen: " . $mysqli->connect_error);
+}
 
 // Check if user actually exists
 
-$sql_c = 'SELECT * FROM user WHERE user_name = "' . $username . '" LIMIT 1';
+$sql_c = 'SELECT user_id FROM user WHERE user_name = "' . $username . '" LIMIT 1';
 
-if (!$result_u = $mysqli->query($sql_c)) {
+$statement = $mysqli->prepare($sql_c);
+$statement->execute();
+
+$result_u = $statement->get_result();
+
+if (!$result_u) {
     echo "<h1>Sorry, the website is experiencing problems.</h1>\n";
     echo "Error: Failed to make a MySQL connection, here is why: \n";
     echo "Errno: " . $mysqli->connect_errno . "\n";
@@ -66,21 +81,22 @@ if (!$result_u = $mysqli->query($sql_c)) {
 
 if ($result_u->num_rows === 0) {
     echo '<h1>No such user!</h1>
-    <a href="afdcloses.php">&lt;&lt;&lt; Try again</a>';
+    <a href="delanalyze.php">&lt;&lt;&lt; Try again</a>';
     exit;
 }
 
-
-//Actual query
-$sql = 'SELECT page_title, revs.rev_timestamp, revs.rev_comment
+//Actual query (new 2020 after actor migration)
+$sql = 'SELECT page_title, revs.rev_timestamp, cmt.comment_text
 FROM revision_userindex AS revs
 LEFT JOIN revision_userindex AS parentrevs ON (revs.rev_parent_id= parentrevs.rev_id)
-JOIN page ON revs.rev_page = page_id
-LEFT JOIN user AS usr ON revs.rev_user = usr.user_id
+LEFT JOIN comment AS cmt ON revs.rev_comment_id = cmt.comment_id
+LEFT JOIN page ON revs.rev_page = page_id
+LEFT JOIN actor AS act ON revs.rev_actor = act.actor_id
+LEFT JOIN user AS usr ON act.actor_user = usr.user_id
 WHERE usr.user_name = "' . $username . '"
 AND page_namespace = 4
 AND page_title RLIKE "Articles_for_deletion"
-AND ((revs.rev_comment RLIKE "Closed as" AND revs.rev_comment RLIKE "XFDcloser") OR revs.rev_comment RLIKE "result was")';
+AND ((cmt.comment_text RLIKE "Closed as" AND cmt.comment_text RLIKE "XFDcloser") OR cmt.comment_text RLIKE "result was")';
 
 // Add limit if requested
 if ($_GET['limit'] == "number") {
@@ -112,7 +128,12 @@ $output .= '<table id="results" class="tablesorter">
 </thead>';
 
 // Do query
-if (!$result = $mysqli->query($sql)) {
+$statement = $mysqli->prepare($sql);
+$statement->execute();
+
+$result = $statement->get_result();
+
+if (!$result) {
     echo "<h1>Sorry, the website is experiencing problems.</h1>\n";
     echo "Error: Failed to make a MySQL connection, here is why: \n";
     echo "Errno: " . $mysqli->connect_errno . "\n";
@@ -123,8 +144,7 @@ if (!$result = $mysqli->query($sql)) {
 // Parse results
 while ($entry = $result->fetch_assoc()) {
 
-
-	$lowercomment = strtolower($entry['rev_comment']);
+	$lowercomment = strtolower($entry['comment_text']);
 
 		$output .= "<tr class=\"afd\"><td>" . date("d M Y", strtotime($entry['rev_timestamp'])) . "</td><td><a href=\"https://en.wikipedia.org/wiki/Wikipedia:" . $entry['page_title'] . "\" target =\"new\">" . str_replace("_", " ", $entry['page_title']) . "</a></td>";
 
@@ -295,7 +315,7 @@ HTML;
 <html> 
 <head>
   <meta charset="UTF-8">
-<title>SoWhy's AFD analyzer (v0.03)</title>
+<title>SoWhy's AFD analyzer (<?php echo $version; ?>)</title>
 <link rel="stylesheet" type="text/css" href="sowhy.css">
 
   <link rel="stylesheet" href="jquery-ui/jquery-ui.css">
