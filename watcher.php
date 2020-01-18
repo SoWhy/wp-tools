@@ -1,4 +1,6 @@
 <?php
+// Watcher script 2.0 - now with API
+
 // Create namespace array
 
 $nsquery = file_get_contents("https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces&format=json");
@@ -20,7 +22,6 @@ if (($_GET['page']) && (strlen($_GET['page']) <= 255) && (is_int((int)$_GET['nam
 
 //sanitize page name
 $page = htmlspecialchars( strip_tags($_GET['page']) );
-$page = str_replace(" ", "_", $page);
 
 if ((int)$_GET['namespace'] != 0) {
 $fullpage = $namespaces[$_GET['namespace']]['*'] . ":" . $page;
@@ -29,70 +30,83 @@ else {
 $fullpage = $page;
 }
 
-// DB connection
-$ts_pw = posix_getpwuid(posix_getuid());
-$ts_mycnf = parse_ini_file($ts_pw['dir'] . "/replica.my.cnf");
+$apiquery = 'https://en.wikipedia.org/w/api.php?action=query&format=json&prop=info&titles=' . urlencode($fullpage) . '&inprop=watchers';
 
-$mysqli = new mysqli('enwiki.labsdb', $ts_mycnf['user'], $ts_mycnf['password'], 'enwiki_p');
+// set up cURL to query API, thanks for the code to DaveRandom at https://stackoverflow.com/questions/8956331/how-to-get-results-from-the-wikipedia-api-with-php/8956526
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $apiquery);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+curl_setopt($ch, CURLOPT_USERAGENT, 'SoWhyScript/0.2 (https://tools.wmflabs.org/sowhy/)');
 
-//Actual query
-$sql = 'SELECT watchers FROM watchlist_count WHERE wl_title = "' . $page . '" AND wl_namespace = ' . $_GET['namespace'];
+$result = curl_exec($ch);
 
-// Do query
-if (!$result = $mysqli->query($sql)) {
-    echo "<h1>Sorry, the website is experiencing problems.</h1>\n";
-    exit;
-    }
+if (!$result) {
+  exit('cURL Error: '.curl_error($ch));
+}
+
+$parsed_api = json_decode($result, true);
+
+$page_infos = $parsed_api['query']['pages'];
+
+
+foreach ($page_infos as $page_info) {
+
+	$watchers = $page_info['watchers'];
+
+}
+
+
 
 // Get Jimbo's watchers
 
 if (($_GET['namespace'] == 2) || ($_GET['namespace'] == 3)) {
 
-$sql_j = 'SELECT watchers FROM watchlist_count WHERE wl_title = "Jimbo_Wales" AND wl_namespace = 2';
+$api_j = 'https://en.wikipedia.org/w/api.php?action=query&format=json&prop=info&titles=User:Jimbo%20Wales&redirects=1&inprop=watchers';
 
-if (!$result_j = $mysqli->query($sql_j)) {
-    echo "<h1>Sorry, the website is experiencing problems.</h1>\n";
-    exit;
-    }
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $api_j);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+curl_setopt($ch, CURLOPT_USERAGENT, 'SoWhyScript/0.2 (https://tools.wmflabs.org/sowhy/)');
 
-while($entry_j = $result_j->fetch_assoc()) {
+$result_j = curl_exec($ch);
 
-$jw = $entry_j['watchers'];
+if (!$result_j) {
+  exit('cURL Error: '.curl_error($ch));
 }
 
+$parsed_api_j = json_decode($result_j, true);
+
+$parsed_api_j = json_decode($result_j, true);
+
+$jimbo_watchers = $parsed_api_j['query']['pages']['2829412']['watchers'];
 }
 
-// Parse results
+if($watchers) {
+$output = "<table>";
 
+  $output .= "<tr><td><b>Page:</b></td><td>" . str_replace("_", " ", $fullpage) . "</td></tr>";
 
-if ($result->num_rows === 0) {
+  $output .= "<tr><td><b>Watchers: </b></td><td>" . $watchers . "</td></tr>";
 
-$output .= "<b>" . $fullpage . "</b> does not exist or has less than 30 watchers.";
+  if (($_GET['namespace'] == 2) || ($_GET['namespace'] == 3)) {
+
+    $cj = round((($watchers / $jimbo_watchers) * 100), 2);
+
+    $output .= "<tr><td><b>Centijimbos: </b></td><td>(" . $watchers . " / " . $jimbo_watchers . ") * 100 ≈ <b>" . $cj . "</b></td></tr>";;
+
+  }
+  
+  $output .= '</table>';
 
 }
 else {
 
-$output = "<table>";
-while($entry = $result->fetch_assoc()) {
+$output .= "<b>" . $fullpage . "</b> does not exist or has less than 30 watchers.";
 
-  $output .= "<tr><td><b>Page:</b></td><td>" . str_replace("_", " ", $fullpage) . "</td></tr>";
-
-  $output .= "<tr><td><b>Watchers: </b></td><td>" . $entry['watchers'] . "</td></tr>";
-
-  if (($_GET['namespace'] == 2) || ($_GET['namespace'] == 3)) {
-
-    $cj = round((($entry['watchers'] / $jw) * 100), 2);
-
-    $output .= "<tr><td><b>Centijimbos: </b></td><td>(" . $entry['watchers'] . " / " . $jw . ") * 100 ≈ <b>" . $cj . "</b></td></tr>";;
-
-  }
-
-}
-
-$output .= '</table>';
 }
 
 $output .= '<br/><br/><br/><a href="watcher.php">&lt;&lt;&lt; Query another page</a>';
+
 
 }
 else {
@@ -117,7 +131,7 @@ $output .= <<<HTML
 	</table>
 	</form>
 
-	<h4>Notes:</h4>The tool relies on querying the replica database which includes only public information. Pages with less than 30  watchers are not included in these replicaes, so the tool will claim them not to exist.
+	<h4>Notes:</h4>The tool relies on querying the API which includes only public information. Pages with less than 30  watchers are not shown, so the tool will claim them not to exist.
 HTML;
 
 }
@@ -128,7 +142,7 @@ HTML;
 <html>
 <head>
   <meta charset="UTF-8">
-<title>SoWhy's Watcher tool (v0.01)</title>
+<title>SoWhy's Watcher tool (v0.02-API)</title>
 <link rel="stylesheet" type="text/css" href="sowhy.css">
 
 
@@ -144,7 +158,7 @@ echo $output;
 
 ?>
 
-<div id="footer">A <a href="https://en.wikipedia.org/wiki/User:SoWhy" target="new"><span style="font-variant: small-caps"><span style="color: #7A2F2F">So</span><span style="color: #474F84">Why</span></span></a> script. Feedback welcome.<br/>Source code available upon request.
+<div id="footer">A <a href="https://en.wikipedia.org/wiki/User:SoWhy" target="new"><span style="font-variant: small-caps"><span style="color: #7A2F2F">So</span><span style="color: #474F84">Why</span></span></a> script. Feedback welcome.<br/>Source code available at <a href="https://github.com/SoWhy/wp-tools" target="new">GitHub</a>
 
 </div>
 </body>
