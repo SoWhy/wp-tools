@@ -81,7 +81,7 @@ if (!$result_u) {
 
 if ($result_u->num_rows === 0) {
     echo '<h1>No such user!</h1>
-    <a href="delanalyze.php">&lt;&lt;&lt; Try again</a>';
+    <a href="afdcloses.php">&lt;&lt;&lt; Try again</a>';
     exit;
 }
 
